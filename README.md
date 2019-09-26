@@ -8,9 +8,9 @@ Uses spread to most likely picks for each week.
 
 # 2019 Picks
 
-* Philadelphia
-* Baltimore
-* New England
+* Philadelphia  ✔
+* Baltimore  ✔
+* New England  ✔
 * LA Rams
 * New Orleans
 * LA Chargers
