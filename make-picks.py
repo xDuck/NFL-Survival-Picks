@@ -1,6 +1,8 @@
+from collections import defaultdict
 import requests
 import time
 import re
+import math
 
 from bs4 import BeautifulSoup
 from tqdm import tqdm
@@ -10,10 +12,12 @@ SPREAD_URL = "https://www.thelines.com/nfl-lines-every-week-2019/"
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
 
-# Get all the data
-
 
 def get_data():
+    """
+    Get the data from online
+    """
+
     response = requests.get(SPREAD_URL, headers=HEADERS)
     soup = BeautifulSoup(response.text, "html.parser")
     weeks = soup.findAll("table", {"class": "tablepress"})
@@ -43,79 +47,121 @@ def get_data():
             g1 = 0.0 if g[0] == "PK" else float(g[0])
             g2 = 0.0 if g[1] == "PK" else float(g[1])
 
-            # Game
-            games[len(games)-1][t1] = g2
-            games[len(games)-1][t2] = g1
+            # Only add games where there was a clear winner from
+            # the spread. Log spreads here too because the spread
+            # is less important as it gets bigger
+            if g1 > 0:
+                games[len(games)-1][t2] = g1  # math.log(g1)
+            elif g2 > 0:
+                games[len(games)-1][t1] = g2  # math.log(g2)
 
     return games, list(team_names)
 
 
-# Compute the sum for the given choices
-def compute(games, choices):
-    sum = 0
-    for i in range(len(choices)):
-        if choices[i] not in games[i]:
-            return -1
-        sum += games[i][choices[i]]
-    return sum
+class Graph:
+    """
+    Represents a graph
+    """
+
+    def __init__(self, vertices):
+        self.V = vertices  # No. of vertices
+        self.graph = []  # default dictionary to store graph
+
+    # function to add an edge to graph
+    def addEdge(self, u, v, w):
+        self.graph.append([u, v, w])
+
+    # utility function used to print the solution
+    def printArr(self, dist):
+        print("Vertex   Distance from Source")
+        for i in range(self.V):
+            print("% d \t\t % lf" % (i, dist[i]))
+
+    def isInPath(self, u, parent, v):
+        if (u-1) % 32 == (v-1) % 32:
+            return True
+        if v < 0:
+            return False
+        return self.isInPath(u, parent, parent[v])
+
+    # The main function that finds shortest distances from src to
+    # all other vertices using Bellman-Ford algorithm.  The function
+    # also detects negative weight cycle
+    def BellmanFord(self, src):
+
+        # Step 1: Initialize distances from src to all other vertices
+        # as INFINITE and parent array as -1
+        dist = [float("Inf")] * self.V
+        dist[src] = 0
+        parent = [-1] * self.V
+
+        # Step 2: Relax all edges |V| - 1 times. A simple shortest
+        # path from src to any other vertex can have at-most |V| - 1
+        # edges
+        for i in tqdm(range(self.V - 1)):
+            # Update dist value and parent index of the adjacent vertices of
+            # the picked vertex. Consider only those vertices which are still in
+            # queue
+            # TODO: Don't update if vertex % 16 (?) is already in the mapping
+            for u, v, w in self.graph:
+                if dist[u] != float("Inf") and dist[u] + w < dist[v] and not self.isInPath(v, parent, u):
+                    dist[v] = dist[u] + w
+                    parent[v] = u
+
+        # self.printArr(dist)
+        return dist, parent
 
 
-# Calculate based on a set of choices
-def calculate(games, teams):
-    best_sum = 0
-    best_list = []
-
-    for choice in tqdm(permutations(teams, len(games))):
-        v = compute(games, choice)
-        if v == best_sum:
-            best_list.append(choice)
-        elif v > best_sum:
-            best_list = [choice]
-
-    return best_list
+def vertexToTeam(v, teams):
+    return teams[(v-1) % len(teams)]
 
 
-best_sum = 0
-best_list = []
-
-# A more efficient permutation-based approach
-
-
-def efficient_permute(games, teams, current, current_sum):
-    global best_sum, best_list
-
-    # Hit length
-    if len(current) == len(games):
-        if current_sum == best_sum:
-            best_list.append(current)
-        elif current_sum > best_sum:
-            best_sum = current_sum
-            best_list = [current]
-        return
-
-    top = True if len(current) == 0 else False
-
-    # Still need to add more teams
-    if top:
-        for t in tqdm(teams):
-            if t in games[len(current)] and games[len(current)][t] > 0 and t not in current:
-                efficient_permute(games, teams, current +
-                                  [t], current_sum + games[len(current)][t])
+def getPath(parent, v):
+    if v < 0:
+        return []
     else:
-        for t in teams:
-            if t in games[len(current)] and games[len(current)][t] > 0 and t not in current:
-                efficient_permute(games, teams, current +
-                                  [t], current_sum + games[len(current)][t])
+        return getPath(parent, parent[v]) + [v]
 
 
-# Main
-g, t = get_data()
-# print(efficient_permute(g, t, [], 0))
+# Get data
+print("Fetching latest spreads")
+weeks, teams = get_data()
+# weeks = weeks[:]
 
-n_teams = 32
-n_weeks = len(g)
-iter_s = 350000.0
+n_weeks = len(weeks)
+n_teams = len(teams)
 
-n_v = (n_teams * n_weeks) ** 2
-n_e = (n_teams ** 2) * n_weeks
-O = n_v * n_e
+# Init graph
+n_v = (n_teams * (n_weeks + 1)) + 2
+print("Building graph w/ %d vertecies" % n_v)
+g = Graph(n_v)
+
+# Start point is vertex 0 and it connects to every
+# vertex 1->n_teams, so everything after this will offset
+# vertex by 1 to account for start vertex
+for i in range(n_teams):
+    g.addEdge(0, i + 1, 0)
+
+# End point is vertex n_v and it connects to every
+# vertext n_v-n_teams-1 -> n_v-1
+for i in range(n_teams):
+    g.addEdge(n_v - n_teams + i - 1, n_v - 1, 0)
+
+# Connect graph
+for w, week in enumerate(weeks):
+    for team, spread in week.items():
+        u = w * n_teams + teams.index(team) + 1
+        for i in range(n_teams):
+            v = (w+1) * n_teams + i + 1
+            g.addEdge(u, v, -spread)
+
+# Bellman ford
+print("Running Bellman ford")
+d, p = g.BellmanFord(0)
+
+# Print result
+v = n_teams * n_weeks + i
+path = getPath(p, n_v - 1)[1:-2]
+for i, t in enumerate(path):
+    path[i] = vertexToTeam(t, teams)
+print(', '.join(path))
