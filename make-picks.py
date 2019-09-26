@@ -51,9 +51,9 @@ def get_data():
             # the spread. Log spreads here too because the spread
             # is less important as it gets bigger
             if g1 > 0:
-                games[len(games)-1][t2] = g1  # math.log(g1)
+                games[len(games)-1][t2] = math.log(g1)
             elif g2 > 0:
-                games[len(games)-1][t1] = g2  # math.log(g2)
+                games[len(games)-1][t1] = math.log(g2)
 
     return games, list(team_names)
 
@@ -102,13 +102,11 @@ class Graph:
             # Update dist value and parent index of the adjacent vertices of
             # the picked vertex. Consider only those vertices which are still in
             # queue
-            # TODO: Don't update if vertex % 16 (?) is already in the mapping
             for u, v, w in self.graph:
                 if dist[u] != float("Inf") and dist[u] + w < dist[v] and not self.isInPath(v, parent, u):
                     dist[v] = dist[u] + w
                     parent[v] = u
 
-        # self.printArr(dist)
         return dist, parent
 
 
@@ -126,8 +124,6 @@ def getPath(parent, v):
 # Get data
 print("Fetching latest spreads")
 weeks, teams = get_data()
-# weeks = weeks[:]
-
 n_weeks = len(weeks)
 n_teams = len(teams)
 
