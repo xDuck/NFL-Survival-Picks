@@ -8,19 +8,21 @@ Uses spread to most likely picks for each week.
 
 # 2019 Picks
 
-* Philadelphia  ✔
-* Baltimore  ✔
-* New England  ✔
-* LA Rams
-* New Orleans
-* LA Chargers
-* Buffalo
-* Pittsburgh
-* Seattle
-* Indianapolis
-* San Francisco
-* Chicago
-* Dallas
-* Cleveland
-* NY Giants
-* Atlanta
+* **Philadelphia** vs Redskins ✔
+* **Baltimore** vs Cardinals ✔
+* **New England** vs Jets ✔
+* **LA Rams** vs Bucs
+* **New Orleans** vs Bucs 
+* **LA Chargers** vs Steelers 
+* **Buffalo** vs Dolphins 
+* **Pittsburgh** vs Steelers 
+* **Seattle** vs Bucs 
+* **Indianapolis** vs Dolphins 
+* **San Francisco** vs Cardinals 
+* **Chicago** vs Giants 
+* **Dallas** vs Bills 
+* **Cleveland** vs Bengals 
+* **NY Giants** vs Dolphins 
+* **Atlanta** vs Jaguars
+
+*Note:* All teams picked were home teams
